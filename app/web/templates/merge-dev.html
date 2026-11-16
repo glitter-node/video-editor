@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Merge development test</title>
+  <link rel="stylesheet" href="/static/css/merge-dev.css">
+  <script type="module" src="/static/js/app/merge-dev.js"></script>
+</head>
+<body>
+  <main>
+    <h1>Merge development test</h1>
+    <p>Select two or more local videos. Confirm FPS and audio presence for each file; browser video metadata does not reliably provide them.</p>
+    <label>Video files <input id="files" type="file" accept=".mp4,.mov,.mkv,.webm" multiple></label>
+    <div id="inputs"></div>
+    <fieldset>
+      <legend>Output</legend>
+      <label>Width <input id="width" type="number" min="2" max="3840" step="2" value="640"></label>
+      <label>Height <input id="height" type="number" min="2" max="2160" step="2" value="360"></label>
+      <label>FPS <input id="fps" type="number" min="1" max="60" step="any" value="30"></label>
+    </fieldset>
+    <button id="run" type="button">Plan and merge</button>
+    <button id="cancel" type="button" disabled>Cancel</button>
+    <p id="status" role="status">Idle</p>
+    <p id="progress">Encoding progress: unavailable</p>
+    <pre id="log"></pre>
+    <a id="download" hidden>Download merged video</a>
+  </main>
+</body>
+</html>

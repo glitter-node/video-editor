@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>vedit</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="hdr">
+      <h1 class="ttl">Video Editor</h1>
+      <p class="sub">Local video editing in your browser (no upload)</p>
+    </header>
+
+    <section class="card">
+      <div class="row">
+        <label class="lbl" for="file">Input video</label>
+        <input type="file" id="file" accept="video/*">
+      </div>
+
+      <div class="row">
+        <button id="run" type="button">Run</button>
+        <button id="clear" type="button" class="ghost">Clear</button>
+      </div>
+
+      <pre id="log" class="log" aria-live="polite"></pre>
+
+      <div class="out">
+        <video id="out" controls playsinline></video>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/static/js/t-min.js?v=3"></script>
+</body>
+</html>

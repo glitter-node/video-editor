@@ -1,0 +1,20 @@
+import assert from "node:assert/strict";
+import { calculateSeekMs, calculateTrimMs, getShortcutAction } from "../app/web/static/js/app/shortcuts.js";
+
+assert.equal(getShortcutAction({ key: " ", code: "Space" }), "toggle-playback");
+assert.equal(getShortcutAction({ key: "ArrowLeft", shiftKey: false }), "seek-backward");
+assert.equal(getShortcutAction({ key: "ArrowRight", shiftKey: true }), "seek-fine-forward");
+assert.equal(getShortcutAction({ key: "Home" }), "seek-start");
+assert.equal(getShortcutAction({ key: "i" }), "trim-start");
+assert.equal(getShortcutAction({ key: "z", ctrlKey: true }), "undo");
+assert.equal(getShortcutAction({ key: "z", metaKey: true, shiftKey: true }), "redo");
+assert.equal(getShortcutAction({ key: "y", ctrlKey: true }), "redo");
+assert.equal(getShortcutAction({ key: "ArrowLeft", altKey: true }), null);
+assert.equal(calculateSeekMs(500, 4000, "seek-backward"), 0);
+assert.equal(calculateSeekMs(3900, 4000, "seek-forward"), 4000);
+assert.equal(calculateSeekMs(1500, 4000, "seek-fine-backward"), 1400);
+assert.deepEqual(calculateTrimMs(500, { startMs: 0, endMs: 4000 }, "start", 4000), { startMs: 500, endMs: 4000 });
+assert.deepEqual(calculateTrimMs(2500, { startMs: 0, endMs: 4000 }, "end", 4000), { startMs: 0, endMs: 2500 });
+assert.equal(calculateTrimMs(4000, { startMs: 0, endMs: 4000 }, "start", 4000), null);
+assert.equal(calculateTrimMs(0, { startMs: 0, endMs: 4000 }, "end", 4000), null);
+console.log("shortcut tests passed");

@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright test",
+    "test:timeline": "node tests/test_timeline_time.mjs",
+    "test:shortcuts": "node tests/test_shortcuts.mjs",
+    "test:theme": "node tests/test_theme.mjs",
+    "test:i18n": "node tests/test_i18n.mjs",
+    "test:filename": "node tests/test_filename.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0"
+  }
+}

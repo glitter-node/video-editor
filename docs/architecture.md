@@ -1,0 +1,9 @@
+# Architecture
+
+The browser owns video files and runs the bundled FFmpeg.wasm code. JavaScript sends only metadata and editing recipes to FastAPI. FastAPI validates recipes, plans FFmpeg arguments, and stores optional custom presets through SQLAlchemy and SQLite. Application lifespan initializes missing tables and disposes the engine at shutdown. Static assets and HTML templates resolve relative to application source files. There is no media upload or server-side transcoding.
+
+`app/main.py` configures lifespan, routes, static files, and security middleware. `app/core/config.py` reads process variables and an optional project-root `.env`; it does not automatically read the historical `data/config/env/video-editor/.env`. The example systemd unit explicitly loads that file. `app/core/db.py` configures SQLite foreign keys and a five-second busy timeout. `app/core/models.py` defines the preset table. `app/core/security.py` guards writes. `app/api/video.py` validates recipes and stores presets; `app/api/plan.py` constructs FFmpeg arguments. `app/web/router.py` serves HTML and health checks.
+
+The full editor uses a bundled single-thread FFmpeg.wasm worker. It creates local output URLs and offers a cancel button. `/t/min` is a separate fixed-recipe demonstration with duplicated processing code. Browser audio-track detection and container codec support require manual verification. WAL is not enabled automatically on the existing database. `create_all` does not migrate existing tables; review a backup and a separate migration before any schema change.
+
+Preset reads are public. Writes require both `PRESET_WRITE_ENABLED=true` and a server-side `PRESET_WRITE_KEY`; never put the key in browser code. CORS is closed by default, trusted hosts default to loopback names, API bodies are capped at 64 KiB, and CSP permits same-origin scripts, workers, and WASM.

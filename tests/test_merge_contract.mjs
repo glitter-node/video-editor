@@ -1,0 +1,21 @@
+import assert from "node:assert/strict";
+import { prepareMergeExecution } from "../app/web/static/js/app/merge-contract.js";
+
+const graph = "[0:v]trim=start=0.000:end=1.000[v0];[1:v]trim=start=0.000:end=1.000[v1];[v0][a0][v1][a1]concat=n=2:v=1:a=1[vout][aout]";
+const planRes = { mode: "merge", inputs: ["input_0.mp4", "input_1.webm"], input_count: 2, clip_count: 2, estimated_duration_ms: 2000, ffmpeg_args: ["-filter_complex", graph, "-map", "[vout]", "-map", "[aout]", "-c:v", "libx264", "-c:a", "aac", "-pix_fmt", "yuv420p"], output_filename: "merged.mp4" };
+const files = [{ name: "same.mp4", size: 100, arrayBuffer() {} }, { name: "same.webm", size: 100, arrayBuffer() {} }];
+const prepare = (changes = {}, fileChanges = files) => prepareMergeExecution({ files: fileChanges, planRes: { ...planRes, ...changes }, executionId: 4 });
+const result = prepare();
+assert.deepEqual(result.inputNames, ["4-input_0.mp4", "4-input_1.webm"]);
+assert.deepEqual(result.args.slice(0, 5), ["-y", "-i", "4-input_0.mp4", "-i", "4-input_1.webm"]);
+assert.equal(result.args.at(-1), "4-merged.mp4");
+assert.equal(result.args.filter((arg) => arg === "-i").length, 2);
+assert.throws(() => prepare({}, files.slice(0, 1)), /count mismatch/);
+assert.throws(() => prepare({ inputs: ["input_0.mp4", "input_0.webm"] }), /filename or order/);
+assert.throws(() => prepare({ inputs: ["../input_0.mp4", "input_1.webm"] }), /filename or order/);
+assert.throws(() => prepare({ ffmpeg_args: ["-i", "bad.mp4", ...planRes.ffmpeg_args] }), /options/);
+assert.throws(() => prepare({ output_filename: "../merged.mp4" }), /output filename/);
+assert.throws(() => prepare({}, [{ ...files[0], size: 0 }, files[1]]), /empty/);
+assert.throws(() => prepare({}, [{ ...files[0], size: 2 * 1024 ** 3 }, { ...files[1], size: 2 }]), /total limit/);
+assert.throws(() => prepare({}, [{ ...files[0], name: "x.mov" }, files[1]]), /extension/);
+console.log("Merge contract tests passed");

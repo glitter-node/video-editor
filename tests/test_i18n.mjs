@@ -1,0 +1,28 @@
+import assert from "node:assert/strict";
+import { applyTranslations, getSavedLanguage, normalizeLanguage, setLanguage, t } from "../app/web/static/js/app/i18n.js";
+
+assert.equal(normalizeLanguage("ko"), "ko");
+assert.equal(normalizeLanguage("en"), "en");
+assert.equal(normalizeLanguage("fr"), "ko");
+assert.equal(getSavedLanguage({ getItem: () => "en" }), "en");
+assert.equal(getSavedLanguage({ getItem: () => "fr" }), "ko");
+assert.equal(getSavedLanguage({ getItem: () => { throw new Error("storage unavailable"); } }), "ko");
+const storage = { value: null, getItem: () => storage.value, setItem: (_, value) => { storage.value = value; } };
+assert.equal(setLanguage("en", storage), "en");
+assert.equal(storage.value, "en");
+assert.equal(t("controls.addSegment"), "Add segment");
+assert.equal(t("page.singleEdit"), "Single Video Edit");
+assert.equal(t("page.merge"), "Video Merge");
+assert.equal(t("hero.title"), "Create videos in your browser");
+assert.equal(t("hero.editCta"), "Start editing");
+assert.equal(t("missing.translation"), "missing.translation");
+globalThis.document = { documentElement: { lang: "" }, querySelectorAll: () => [] };
+applyTranslations();
+assert.equal(document.documentElement.lang, "en");
+setLanguage("ko", storage);
+assert.equal(t("controls.addSegment"), "구간 추가");
+assert.equal(t("page.singleEdit"), "단일 영상 편집");
+assert.equal(t("page.merge"), "영상 병합");
+assert.equal(t("hero.title"), "내 브라우저에서 완성하는 영상 편집");
+assert.equal(t("hero.mergeCta"), "영상 병합 시작");
+console.log("i18n tests passed");

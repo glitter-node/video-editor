@@ -1,0 +1,60 @@
+import assert from "node:assert/strict";
+import { analyzeMp4, analyzeWebm, applyStreamAnalysis, fpsChoice, setManualFps, STANDARD_FPS } from "../app/web/static/js/app/stream-meta.js";
+
+const be32 = (value) => [value >>> 24, value >>> 16 & 255, value >>> 8 & 255, value & 255];
+const atom = (name, bytes) => Uint8Array.from([...be32(bytes.length + 8), ...Array.from(name).map((char) => char.charCodeAt(0)), ...bytes]);
+const concat = (...parts) => Uint8Array.from(parts.flatMap((part) => Array.from(part)));
+const track = (type, entries = []) => {
+  const hdlr = atom("hdlr", Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0, ...Array.from(type).map((char) => char.charCodeAt(0))]));
+  const mdhd = atom("mdhd", Uint8Array.from([0, 0, 0, 0, ...be32(0), ...be32(0), ...be32(1000), ...be32(3000)]));
+  const stts = atom("stts", Uint8Array.from([0, 0, 0, 0, ...be32(entries.length), ...entries.flatMap(([count, delta]) => [...be32(count), ...be32(delta)])]));
+  return atom("trak", atom("mdia", concat(hdlr, mdhd, atom("minf", atom("stbl", stts)))));
+};
+const namedBlob = (name, bytes) => Object.assign(new Blob([bytes]), { name });
+
+const fixedMp4 = namedBlob("fixed.mp4", concat(atom("ftyp", Uint8Array.from([1, 2, 3, 4])), atom("moov", concat(track("vide", [[60, 33]]), track("soun")))));
+const fixed = await analyzeMp4(fixedMp4);
+assert.equal(fixed.fpsKind, "fixed");
+assert.equal(fixed.hasAudio, true);
+assert.ok(Math.abs(fixed.fps - 30.303) < 0.01);
+const vfrMp4 = namedBlob("vfr.mp4", atom("moov", track("vide", [[10, 40], [10, 20]])));
+const vfr = await analyzeMp4(vfrMp4);
+assert.equal(vfr.fpsKind, "average-vfr");
+assert.ok(Math.abs(vfr.fps - 33.333) < 0.01);
+assert.equal(vfr.hasAudio, false);
+
+const ebml = (id, bytes) => Uint8Array.from([...id, 0x80 | bytes.length, ...bytes]);
+const videoEntry = ebml([0xae], concat(ebml([0x83], [1]), ebml([0x23, 0xe3, 0x83], be32(33366667))));
+const audioEntry = ebml([0xae], ebml([0x83], [2]));
+const webm = namedBlob("video.webm", concat(ebml([0x1a, 0x45, 0xdf, 0xa3], []), Uint8Array.from([0x18, 0x53, 0x80, 0x67, 0x01, 255, 255, 255, 255, 255, 255, 255]), ebml([0x16, 0x54, 0xae, 0x6b], concat(videoEntry, audioEntry))));
+const webmResult = await analyzeWebm(webm);
+assert.equal(webmResult.fpsKind, "declared");
+assert.ok(Math.abs(webmResult.fps - 29.97) < 0.01);
+assert.equal(webmResult.hasAudio, true);
+
+assert.deepEqual(STANDARD_FPS, [23.976, 24, 25, 29.97, 30, 50, 59.94, 60]);
+assert.equal(fpsChoice(29.970029), "29.97");
+assert.equal(fpsChoice(27.2727), "27.273");
+const entry = { fps: "", fpsSource: null, hasAudio: null, audioSource: null };
+applyStreamAnalysis(entry, { fps: 29.970029, fpsKind: "fixed", hasAudio: true });
+assert.equal(entry.fps, "29.97");
+assert.equal(entry.fpsSource, "detected");
+assert.equal(entry.hasAudio, true);
+setManualFps(entry, "24");
+entry.hasAudio = false;
+entry.audioSource = "manual";
+applyStreamAnalysis(entry, { fps: 60, fpsKind: "fixed", hasAudio: true });
+assert.equal(entry.detectedFps, 60);
+assert.equal(entry.fps, "24");
+assert.equal(entry.hasAudio, false);
+setManualFps(entry, "custom", true);
+assert.equal(entry.fpsMode, "custom");
+assert.equal(entry.fps, "");
+entry.fps = "27.5";
+applyStreamAnalysis(entry, { fps: 30, fpsKind: "fixed", hasAudio: true });
+assert.equal(entry.fps, "27.5");
+const unavailable = { fps: "", fpsSource: null, hasAudio: null, audioSource: null };
+applyStreamAnalysis(unavailable, { fps: null, fpsKind: null, hasAudio: null });
+assert.equal(unavailable.fps, "");
+assert.equal(unavailable.hasAudio, null);
+console.log("Stream metadata tests passed");
